@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Správa hudebních žáků</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>🎵 Správa hudebních žáků</h1>
+            <div class="header-controls">
+                <select id="instrumentFilter" class="form-control filter-select">
+                    <option value="">Všechny nástroje</option>
+                    <option value="kytara">Kytara</option>
+                    <option value="klarinet">Klarinet</option>
+                    <option value="zobcová flétna">Zobcová flétna</option>
+                    <option value="saxofon">Saxofon</option>
+                </select>
+                <select id="gradeFilter" class="form-control filter-select">
+                    <option value="">Všechny ročníky</option>
+                    <option value="1">1. ročník</option>
+                    <option value="2">2. ročník</option>
+                    <option value="3">3. ročník</option>
+                    <option value="4">4. ročník</option>
+                </select>
+                <select id="motivationFilter" class="form-control filter-select">
+                    <option value="">Všechny stavy</option>
+                    <option value="high">Vysoká motivace</option>
+                    <option value="low">Krize</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view">
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <h3>Celkem žáků</h3>
+                    <div class="stat-number" id="totalStudents">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Aktivních úkolů</h3>
+                    <div class="stat-number" id="activeTasks">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Udělených ocenění</h3>
+                    <div class="stat-number" id="totalAwards">0</div>
+                </div>
+            </div>
+
+            <div class="students-grid" id="studentsGrid">
+                <!-- Student cards will be generated here -->
+            </div>
+        </div>
+
+        <!-- Student Detail View -->
+        <div id="studentDetailView" class="view hidden">
+            <div class="student-detail-header">
+                <button class="btn btn--secondary" id="backToDashboard">← Zpět na dashboard</button>
+                <div class="student-profile" id="studentProfile">
+                    <!-- Student profile will be generated here -->
+                </div>
+            </div>
+
+            <div class="student-detail-content">
+                <div class="detail-section">
+                    <div class="section-header">
+                        <h3>Úkoly</h3>
+                        <button class="btn btn--primary" id="addTaskBtn">+ Přidat úkol</button>
+                    </div>
+                    <div class="tasks-list" id="tasksList">
+                        <!-- Tasks will be generated here -->
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="section-header">
+                        <h3>Ocenění</h3>
+                        <button class="btn btn--primary" id="addAwardBtn">+ Přidat ocenění</button>
+                    </div>
+                    <div class="awards-list" id="awardsList">
+                        <!-- Awards will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Přidat nový úkol</h3>
+                <button class="modal-close" id="closeTaskModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addTaskForm">
+                    <div class="form-group">
+                        <label class="form-label">Název úkolu</label>
+                        <input type="text" id="taskTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Skladba</label>
+                        <input type="text" id="taskComposition" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Poznámka</label>
+                        <textarea id="taskNote" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Stav úkolu</label>
+                        <select id="taskStatus" class="form-control" required>
+                            <option value="⏳ Cvičíme">⏳ Cvičíme</option>
+                            <option value="🚀 Skvělý pokrok!">🚀 Skvělý pokrok!</option>
+                            <option value="✅ Zvládnuto">✅ Zvládnuto</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Body</label>
+                        <input type="number" id="taskPoints" class="form-control" min="0" max="10" value="5">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" id="cancelTaskBtn">Zrušit</button>
+                        <button type="submit" class="btn btn--primary">Přidat úkol</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Award Modal -->
+    <div id="addAwardModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Přidat nové ocenění</h3>
+                <button class="modal-close" id="closeAwardModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addAwardForm">
+                    <div class="form-group">
+                        <label class="form-label">Název ocenění</label>
+                        <input type="text" id="awardTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL obrázku</label>
+                        <input type="url" id="awardImageUrl" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Popis</label>
+                        <textarea id="awardDescription" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" id="cancelAwardBtn">Zrušit</button>
+                        <button type="submit" class="btn btn--primary">Přidat ocenění</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editTaskModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upravit úkol</h3>
+                <button class="modal-close" id="closeEditTaskModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editTaskForm">
+                    <div class="form-group">
+                        <label class="form-label">Název úkolu</label>
+                        <input type="text" id="editTaskTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Skladba</label>
+                        <input type="text" id="editTaskComposition" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Poznámka</label>
+                        <textarea id="editTaskNote" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Stav úkolu</label>
+                        <select id="editTaskStatus" class="form-control" required>
+                            <option value="⏳ Cvičíme">⏳ Cvičíme</option>
+                            <option value="🚀 Skvělý pokrok!">🚀 Skvělý pokrok!</option>
+                            <option value="✅ Zvládnuto">✅ Zvládnuto</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Body</label>
+                        <input type="number" id="editTaskPoints" class="form-control" min="0" max="10">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" id="cancelEditTaskBtn">Zrušit</button>
+                        <button type="submit" class="btn btn--primary">Uložit změny</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
