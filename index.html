@@ -41,7 +41,8 @@
     .card { background:linear-gradient(180deg,var(--card), #0b1220); border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); transition:transform 0.2s; cursor:pointer; }
     .card:hover { transform:translateY(-2px); }
     .row { display:flex; gap:12px; align-items:center; }
-    .avatar { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:800; color:white; font-size:18px; }
+    .avatar { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:800; color:white; font-size:18px; overflow:hidden; }
+    .avatar img { width:100%; height:100%; object-fit:cover; }
     .name { font-weight:700; font-size:18px; }
     .muted { color: var(--muted); font-size: 13px; margin-top:4px; }
     .badges { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
@@ -126,7 +127,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Navigation -->
     <div class="nav">
       <h1>🎵 Správa hudebních žáků</h1>
       <button class="nav-btn active" data-view="dashboard">📊 Dashboard</button>
@@ -134,7 +134,6 @@
       <button class="nav-btn" onclick="location.reload()">🔄 Obnovit</button>
     </div>
 
-    <!-- Dashboard View -->
     <div id="dashboard-view" class="dashboard-view">
       <div class="controls">
         <select class="select" id="fInstrument">
@@ -182,7 +181,6 @@
       <div id="grid" class="grid"></div>
     </div>
 
-    <!-- Statistics View -->
     <div id="statistics-view" class="statistics-view" style="display:none;">
       <div class="stats">
         <div class="stat">
@@ -210,13 +208,12 @@
       </div>
     </div>
 
-    <!-- Student Detail View -->
     <div id="detail-view" class="detail-view">
       <button class="nav-btn" onclick="showDashboard()">← Zpět na dashboard</button>
       
       <div class="detail-header">
         <div class="row">
-          <div class="avatar detail-avatar" id="detailAvatar">KK</div>
+          <div class="avatar detail-avatar" id="detailAvatar"></div>
           <div class="detail-info">
             <h2 id="detailName">Jméno žáka</h2>
             <div class="muted" id="detailBasicInfo">Nástroj • Ročník • Věk</div>
@@ -225,25 +222,72 @@
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-header">
-          <h2>📝 Úkoly</h2>
-          <button class="btn btn-primary" onclick="showAddTaskModal()">➕ Přidat úkol</button>
+      <div id="student-only-sections" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <h2>📝 Úkoly</h2>
+            <button class="btn btn-primary" onclick="showAddTaskModal()">➕ Přidat úkol</button>
+          </div>
+          <div id="detailTasks"></div>
         </div>
-        <div id="detailTasks"></div>
+
+        <div class="section">
+          <div class="section-header">
+            <h2>🏆 Ocenění</h2>
+            <button class="btn btn-primary" onclick="showAddAwardModal()">➕ Přidat ocenění</button>
+          </div>
+          <div id="detailAwards"></div>
+        </div>
       </div>
 
-      <div class="section">
-        <div class="section-header">
-          <h2>🏆 Ocenění</h2>
-          <button class="btn btn-primary" onclick="showAddAwardModal()">➕ Přidat ocenění</button>
+      <div id="admin-only-sections" style="display: none;">
+        <div class="section">
+          <h2>📊 Skóre</h2>
+          <div class="stats">
+            <div class="stat">
+              <div class="label">Celkový počet bodů</div>
+              <div class="num" id="scorePoints">0</div>
+            </div>
+            <div class="stat">
+              <div class="label">Probíhající skladby</div>
+              <div class="num" id="scoreOngoingCompositions">0</div>
+            </div>
+            <div class="stat">
+              <div class="label">Dokončené skladby</div>
+              <div class="num" id="scoreCompletedCompositions">0</div>
+            </div>
+          </div>
         </div>
-        <div id="detailAwards"></div>
+
+        <div class="section">
+          <div class="section-header">
+            <h2>🎵 Na čem pracujeme</h2>
+            <button class="btn btn-primary" onclick="showAddTaskModal()">➕ Přidat úkol</button>
+          </div>
+          <div id="tasks-compositions"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <h2>📝 Průběh učení</h2>
+          </div>
+          <h3>Cvičení na příště</h3>
+          <div id="tasks-no-compositions"></div>
+          <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+          <h3>Předchozí úkoly</h3>
+          <div id="tasks-completed"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <h2>🏆 Moje ocenění</h2>
+          </div>
+          <div id="my-awards"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Add Task Modal -->
   <div id="addTaskModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -289,7 +333,6 @@
     </div>
   </div>
 
-  <!-- Add Award Modal -->
   <div id="addAwardModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -324,32 +367,32 @@
   </div>
 
   <script>
-    // API Configuration
+    // ZMĚŇTE TUTO URL NA VAŠI NOVOU GOOGLE APPS SCRIPT URL!
     const CONFIG = {
-      apiBaseUrl: "https://script.google.com/macros/s/AKfycbyfA7DItMK62H6P7scxWQt0gGD5pqkEk77v0Rm01u2eseGNQkJ0hO05j1jmvE_0FYs-Xw/exec",
-      timeoutMs: 15000  // Prodlouženo na 15 sekund
+      apiBaseUrl: "https://script.google.com/macros/s/AKfycbyg3eCO1UqnOxlwNTzg7fVq7BiJpD452Ok4LBQRPQ8DpuKlLvVZvjD2RJT4FHRk0e20Rg/exec",
+      timeoutMs: 8000
     };
 
     // Fallback demo data 
     const FALLBACK = {
       students: [
-        { id:1, firstName:'Karolína', lastName:'Bayerová', nickname:'Karolínka', instrument:'kytara', grade:3, motivation:4, birthDate:'2015-11-28' },
-        { id:2, firstName:'Antonín', lastName:'Bechyňa', nickname:'Toník', instrument:'kytara', grade:4, motivation:4, birthDate:'2014-10-02' },
-        { id:3, firstName:'Filip', lastName:'Červenka', nickname:'Filípek', instrument:'klarinet', grade:4, motivation:4, birthDate:'2015-04-05' },
-        { id:4, firstName:'Marie', lastName:'Nová', nickname:'Marička', instrument:'zobcová flétna', grade:2, motivation:3, birthDate:'2016-03-15' },
-        { id:5, firstName:'Tomáš', lastName:'Svoboda', nickname:'Tom', instrument:'saxofon', grade:3, motivation:5, birthDate:'2015-07-20' }
+        { id:1, firstName:'Karolína', lastName:'Bayerová', fullName:'Karolína Bayerová', nickname:'Karolínka', instrument:'kytara', grade:3, motivation:2, birthDate:'2015-11-28', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704d'},
+        { id:2, firstName:'Antonín', lastName:'Bechyňa', fullName:'Antonín Bechyňa', nickname:'Toník', instrument:'kytara', grade:4, motivation:1, birthDate:'2014-10-02', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704e' },
+        { id:3, firstName:'Filip', lastName:'Červenka', fullName:'Filip Červenka', nickname:'Filípek', instrument:'klarinet', grade:4, motivation:3, birthDate:'2015-04-05', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704f' },
+        { id:4, firstName:'Marie', lastName:'Nová', fullName:'Marie Nová', nickname:'Marička', instrument:'zobcová flétna', grade:2, motivation:4, birthDate:'2016-03-15', avatarUrl: '' },
+        { id:5, firstName:'Tomáš', lastName:'Svoboda', fullName:'Tomáš Svoboda', nickname:'Tom', instrument:'saxofon', grade:3, motivation:5, birthDate:'2015-07-20', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704g' }
       ],
       tasks: [
-        { id:1, studentName:'Bechyňa Antonín', title:'Hrát správné noty', composition:'Coleman - Irská', status:'⏳ Cvičíme', date:'2025-09-19', points:6, note:'Zaměřit se na posuvky' },
-        { id:2, studentName:'Bechyňa Antonín', title:'Dotáhnout držení nástroje', composition:'Bach - Chorál č. 1', status:'🚀 Skvělý pokrok!', date:'2025-09-20', points:9, note:'' },
-        { id:3, studentName:'Bayerová Karolína', title:'Cvičit stupnice', composition:'', status:'⏳ Cvičíme', date:'2025-09-21', points:7, note:'C dur, G dur' },
-        { id:4, studentName:'Červenka Filip', title:'Rytmická cvičení', composition:'Etuda č. 5', status:'✅ Zvládnuto', date:'2025-09-18', points:10, note:'Výborně!' },
-        { id:5, studentName:'Nová Marie', title:'Základní technika', composition:'', status:'⏳ Cvičíme', date:'2025-09-22', points:5, note:'Procvičit fingering' }
+        { id:1, studentName:'Antonín Bechyňa', title:'Hrát správné noty', composition:'Coleman - Irská', status:'⏳ Cvičíme', date:'2025-09-19', points:6, note:'Zaměřit se na posuvky' },
+        { id:2, studentName:'Antonín Bechyňa', title:'Dotáhnout držení nástroje', composition:'Bach - Chorál č. 1', status:'🚀 Skvělý pokrok!', date:'2025-09-20', points:9, note:'' },
+        { id:3, studentName:'Karolína Bayerová', title:'Cvičit stupnice', composition:'', status:'⏳ Cvičíme', date:'2025-09-21', points:7, note:'C dur, G dur' },
+        { id:4, studentName:'Filip Červenka', title:'Rytmická cvičení', composition:'Etuda č. 5', status:'✅ Zvládnuto', date:'2025-09-18', points:10, note:'Výborně!' },
+        { id:5, studentName:'Marie Nová', title:'Základní technika', composition:'', status:'⏳ Cvičíme', date:'2025-09-22', points:5, note:'Procvičit fingering' }
       ],
       awards: [
-        { id:1, studentName:'Bechyňa Antonín', title:'Rytmický mistr', description:'Za zvládnutí složitého rytmu', imageUrl:'https://i.imgur.com/example1.jpg' },
-        { id:2, studentName:'Bayerová Karolína', title:'Pilný student', description:'Za pravidelné cvičení', imageUrl:'' },
-        { id:3, studentName:'Červenka Filip', title:'Technický pokrok', description:'Za výrazné zlepšení techniky', imageUrl:'' }
+        { id:1, studentName:'Antonín Bechyňa', title:'Rytmický mistr', description:'Za zvládnutí složitého rytmu', imageUrl:'https://i.imgur.com/example1.jpg' },
+        { id:2, studentName:'Karolína Bayerová', title:'Pilný student', description:'Za pravidelné cvičení', imageUrl:'' },
+        { id:3, studentName:'Filip Červenka', title:'Technický pokrok', description:'Za výrazné zlepšení techniky', imageUrl:'' }
       ]
     };
 
@@ -364,11 +407,14 @@
     const el = id => document.getElementById(id);
     const age = d => { const b=new Date(d), t=new Date(); let a=t.getFullYear()-b.getFullYear(); const m=t.getMonth()-b.getMonth(); if(m<0||(m===0&&t.getDate()<b.getDate())) a--; return a; };
     const initials = (f,l) => ((f?.[0]||'') + (l?.[0]||'')).toUpperCase();
-    const motClass = m => m>=4 ? 'mot-high' : (m>=3 ? 'mot-mid' : 'mot-low');
-    const motText = m => m>=4 ? 'Vysoká motivace' : (m>=3 ? 'Střední motivace' : 'Krize motivace');
+    
+    // Klíčová oprava: logická inverze motivace
+    const motClass = m => m <= 2 ? 'mot-high' : (m === 3 ? 'mot-mid' : 'mot-low');
+    const motText = m => m <= 2 ? 'Vysoká motivace' : (m === 3 ? 'Střední motivace' : 'Krize motivace');
+    
     const formatDate = d => new Date(d).toLocaleDateString('cs-CZ');
 
-    // OPRAVENÁ JSONP IMPLEMENTACE
+    // KLÍČOVÁ OPRAVA: JSONP fetch
     async function fetchAPI() {
       const p = new URLSearchParams(location.search);
       const admin = p.get('admin');
@@ -378,51 +424,33 @@
       if (admin) url += '&admin=' + encodeURIComponent(admin);
       else if (token) url += '&token=' + encodeURIComponent(token);
 
-      const cb = 'jsonp_cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      const cb = 'jsonp_cb_' + Date.now();
       url += '&callback=' + cb;
 
-      console.log('🔄 Fetching API:', url);
-
       return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        
-        // Prodloužený timeout na 15 sekund
-        const timeout = setTimeout(() => {
-          cleanup();
-          console.error('❌ JSONP timeout after 15s');
-          reject(new Error('JSONP timeout after 15s'));
-        }, CONFIG.timeoutMs);
-        
-        function cleanup() {
-          clearTimeout(timeout);
+        const s = document.createElement('script');
+        window[cb] = (payload) => {
+          try { resolve(payload); }
+          finally {
+            delete window[cb];
+            s.remove();
+          }
+        };
+        s.onerror = () => {
+          delete window[cb];
+          s.remove();
+          reject(new Error('JSONP failed'));
+        };
+        s.src = url;
+        document.head.appendChild(s);
+
+        setTimeout(() => {
           if (window[cb]) {
             delete window[cb];
+            s.remove();
+            reject(new Error('JSONP timeout'));
           }
-          if (script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-        }
-        
-        // Definovat callback před načtením scriptu
-        window[cb] = (payload) => {
-          cleanup();
-          console.log('✅ JSONP Response received:', payload);
-          resolve(payload);
-        };
-        
-        script.onerror = (error) => {
-          cleanup();
-          console.error('❌ JSONP script load failed:', error);
-          reject(new Error('JSONP script load failed'));
-        };
-        
-        script.onload = () => {
-          // Script loaded, callback should be called soon
-          console.log('📄 JSONP script loaded successfully');
-        };
-        
-        script.src = url;
-        document.head.appendChild(script);
+        }, CONFIG.timeoutMs || 8000);
       });
     }
 
@@ -443,17 +471,30 @@
 
     function showDashboard() {
       showView('dashboard');
+      // zobrazit admin rozhraní
+      document.getElementById('student-only-sections').style.display = 'block';
+      document.getElementById('admin-only-sections').style.display = 'block';
       renderGrid(appState.students);
     }
-
+    
     function showStudentDetail(student) {
       appState.currentStudent = student;
       document.getElementById('detail-view').style.display = 'block';
       document.getElementById('dashboard-view').style.display = 'none';
       document.getElementById('statistics-view').style.display = 'none';
-      
+
+      // Původní logika se zachová, ale pro studenta se zobrazí pouze jeho data
+      if (appState.isAdmin) {
+          document.getElementById('student-only-sections').style.display = 'none';
+          document.getElementById('admin-only-sections').style.display = 'block';
+      } else {
+          document.getElementById('student-only-sections').style.display = 'block';
+          document.getElementById('admin-only-sections').style.display = 'none';
+      }
+
       renderStudentDetail(student);
     }
+
 
     // Stats rendering
     function renderStats() {
@@ -536,13 +577,16 @@
       }
 
       grid.innerHTML = students.map(s => {
-        const studentTasks = appState.tasks.filter(t => t.studentName === s.firstName + ' ' + s.lastName || t.studentName === s.lastName + ' ' + s.firstName);
+        const studentTasks = appState.tasks.filter(t => t.studentName === s.fullName);
         const avgPoints = studentTasks.length > 0 ? (studentTasks.reduce((sum, t) => sum + (t.points || 0), 0) / studentTasks.length).toFixed(1) : '0.0';
         
+        // KLÍČOVÁ OPRAVA: Avatar z url
+        const avatarContent = s.avatarUrl ? `<img src="${s.avatarUrl}" alt="${s.fullName}">` : initials(s.firstName, s.lastName);
+
         return `
           <div class="card fade-in" onclick="showStudentDetail(${JSON.stringify(s).replace(/"/g, '&quot;')})">
             <div class="row">
-              <div class="avatar">${initials(s.firstName, s.lastName)}</div>
+              <div class="avatar">${avatarContent}</div>
               <div style="flex:1;">
                 <div class="name">${s.nickname || s.firstName}</div>
                 <div class="muted">${s.instrument} • ${s.grade}. ročník • ${age(s.birthDate)} let</div>
@@ -560,77 +604,110 @@
 
     // Student detail rendering
     function renderStudentDetail(student) {
-      const studentTasks = appState.tasks.filter(t => 
-        t.studentName === student.firstName + ' ' + student.lastName || 
-        t.studentName === student.lastName + ' ' + student.firstName
-      );
-      const studentAwards = appState.awards.filter(a => 
-        a.studentName === student.firstName + ' ' + student.lastName ||
-        a.studentName === student.lastName + ' ' + student.firstName
-      );
+      // KLÍČOVÁ OPRAVA: filtrace úkolů podle 'Celé jméno'
+      const studentTasks = appState.tasks.filter(t => t.studentName === student.fullName);
+      const studentAwards = appState.awards.filter(a => a.studentName === student.fullName);
 
       // Header
-      el('detailAvatar').textContent = initials(student.firstName, student.lastName);
-      el('detailName').textContent = student.nickname || student.firstName + ' ' + student.lastName;
+      // KLÍČOVÁ OPRAVA: Avatar z url a celé jméno
+      const avatarContent = student.avatarUrl ? `<img src="${student.avatarUrl}" alt="${student.fullName}">` : initials(student.firstName, student.lastName);
+      el('detailAvatar').innerHTML = avatarContent;
+      el('detailName').textContent = student.fullName;
       el('detailBasicInfo').textContent = `${student.instrument} • ${student.grade}. ročník • ${age(student.birthDate)} let`;
-      
-      // Meta info
-      const avgPoints = studentTasks.length > 0 ? (studentTasks.reduce((sum, t) => sum + (t.points || 0), 0) / studentTasks.length).toFixed(1) : '0.0';
-      const completedTasks = studentTasks.filter(t => t.status === '✅ Zvládnuto').length;
-      
-      el('detailMeta').innerHTML = `
-        <div class="meta-item">
-          <div class="meta-label">Průměrné body</div>
-          <div class="meta-value">⭐ ${avgPoints}</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Dokončené úkoly</div>
-          <div class="meta-value">✅ ${completedTasks}</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Celkem úkolů</div>
-          <div class="meta-value">📝 ${studentTasks.length}</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Ocenění</div>
-          <div class="meta-value">🏆 ${studentAwards.length}</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Motivace</div>
-          <div class="meta-value ${motClass(student.motivation||3)}">${motText(student.motivation||3)}</div>
-        </div>
-      `;
 
-      // Tasks
-      el('detailTasks').innerHTML = studentTasks.length > 0 
-        ? studentTasks.sort((a,b) => new Date(b.date) - new Date(a.date)).map(task => `
-            <div class="task-item fade-in">
-              <div class="task-header">
-                <div class="task-title">${task.title}</div>
-                <div class="task-points">${task.points || 0} b</div>
+      // Admin zobrazení detailu
+      if (appState.isAdmin) {
+          const totalPoints = studentTasks.reduce((sum, t) => sum + (t.points || 0), 0);
+          const ongoingCompositions = studentTasks.filter(t => t.composition && t.status !== '✅ Zvládnuto').length;
+          const completedCompositions = studentTasks.filter(t => t.composition && t.status === '✅ Zvládnuto').length;
+          
+          el('scorePoints').textContent = totalPoints;
+          el('scoreOngoingCompositions').textContent = ongoingCompositions;
+          el('scoreCompletedCompositions').textContent = completedCompositions;
+
+          const tasksCompositions = studentTasks.filter(t => t.composition);
+          const tasksNoCompositions = studentTasks.filter(t => !t.composition && t.status !== '✅ Zvládnuto');
+          const tasksCompleted = studentTasks.filter(t => t.status === '✅ Zvládnuto');
+
+          el('tasks-compositions').innerHTML = tasksCompositions.length > 0 ? tasksCompositions.map(task => `
+              <div class="task-item fade-in">
+                  <div class="task-header">
+                      <div class="task-title">${task.title}</div>
+                      <div class="task-points">${task.points || 0} b</div>
+                  </div>
+                  <div class="muted">🎵 ${task.composition}</div>
+                  <div class="task-status">${task.status}</div>
+                  <div class="task-date">📅 ${formatDate(task.date)}</div>
+                  ${task.note ? `<div class="muted" style="margin-top:8px; font-style:italic;">"${task.note}"</div>` : ''}
               </div>
-              ${task.composition ? `<div class="muted">🎵 ${task.composition}</div>` : ''}
-              <div class="task-status">${task.status}</div>
-              <div class="task-date">📅 ${formatDate(task.date)}</div>
-              ${task.note ? `<div class="muted" style="margin-top:8px; font-style:italic;">"${task.note}"</div>` : ''}
-            </div>
-          `).join('')
-        : '<div class="loading">📝 Zatím žádné úkoly</div>';
+          `).join('') : '<div class="loading">📝 Zatím žádné skladby</div>';
 
-      // Awards  
-      el('detailAwards').innerHTML = studentAwards.length > 0
-        ? studentAwards.map(award => `
-            <div class="award-item fade-in">
-              <div style="display:flex; gap:12px; align-items:start;">
-                ${award.imageUrl ? `<img src="${award.imageUrl}" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">` : '<div style="width:48px; height:48px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🏆</div>'}
-                <div style="flex:1;">
-                  <div style="font-weight:600; margin-bottom:4px;">${award.title}</div>
-                  <div class="muted">${award.description}</div>
+          el('tasks-no-compositions').innerHTML = tasksNoCompositions.length > 0 ? tasksNoCompositions.map(task => `
+              <div class="task-item fade-in">
+                  <div class="task-header">
+                      <div class="task-title">${task.title}</div>
+                      <div class="task-points">${task.points || 0} b</div>
+                  </div>
+                  <div class="task-status">${task.status}</div>
+                  <div class="task-date">📅 ${formatDate(task.date)}</div>
+                  ${task.note ? `<div class="muted" style="margin-top:8px; font-style:italic;">"${task.note}"</div>` : ''}
+              </div>
+          `).join('') : '<div class="loading">✅ Vše hotovo!</div>';
+
+          el('tasks-completed').innerHTML = tasksCompleted.length > 0 ? tasksCompleted.map(task => `
+              <div class="task-item fade-in">
+                  <div class="task-header">
+                      <div class="task-title">${task.title}</div>
+                      <div class="task-points">${task.points || 0} b</div>
+                  </div>
+                  <div class="task-status">${task.status}</div>
+                  <div class="task-date">📅 ${formatDate(task.date)}</div>
+              </div>
+          `).join('') : '<div class="loading">📝 Žádné dokončené úkoly</div>';
+          
+          el('my-awards').innerHTML = studentAwards.length > 0 ? studentAwards.map(award => `
+              <div class="award-item fade-in">
+                  <div style="display:flex; gap:12px; align-items:start;">
+                      ${award.imageUrl ? `<img src="${award.imageUrl}" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">` : '<div style="width:48px; height:48px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🏆</div>'}
+                      <div style="flex:1;">
+                          <div style="font-weight:600; margin-bottom:4px;">${award.title}</div>
+                          <div class="muted">${award.description}</div>
+                      </div>
+                  </div>
+              </div>
+          `).join('') : '<div class="loading">🏆 Zatím žádná ocenění</div>';
+
+      } else {
+        // Původní zobrazení pro studenta, s upravenou logikou
+        el('detailTasks').innerHTML = studentTasks.length > 0 
+          ? studentTasks.sort((a,b) => new Date(b.date) - new Date(a.date)).map(task => `
+              <div class="task-item fade-in">
+                <div class="task-header">
+                  <div class="task-title">${task.title}</div>
+                  <div class="task-points">${task.points || 0} b</div>
+                </div>
+                ${task.composition ? `<div class="muted">🎵 ${task.composition}</div>` : ''}
+                <div class="task-status">${task.status}</div>
+                <div class="task-date">📅 ${formatDate(task.date)}</div>
+                ${task.note ? `<div class="muted" style="margin-top:8px; font-style:italic;">"${task.note}"</div>` : ''}
+              </div>
+            `).join('')
+          : '<div class="loading">📝 Zatím žádné úkoly</div>';
+
+        el('detailAwards').innerHTML = studentAwards.length > 0
+          ? studentAwards.map(award => `
+              <div class="award-item fade-in">
+                <div style="display:flex; gap:12px; align-items:start;">
+                  ${award.imageUrl ? `<img src="${award.imageUrl}" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">` : '<div style="width:48px; height:48px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🏆</div>'}
+                  <div style="flex:1;">
+                    <div style="font-weight:600; margin-bottom:4px;">${award.title}</div>
+                    <div class="muted">${award.description}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          `).join('')
-        : '<div class="loading">🏆 Zatím žádná ocenění</div>';
+            `).join('')
+          : '<div class="loading">🏆 Zatím žádná ocenění</div>';
+      }
     }
 
     // Filtering
@@ -643,9 +720,10 @@
       if (i) students = students.filter(s => (s.instrument||'') === i);
       if (g) students = students.filter(s => String(s.grade||'') === g);
       if (m) {
-        if (m==='high') students = students.filter(s => (s.motivation||0) >= 4);
+        // KLÍČOVÁ OPRAVA: filtry motivace odpovídají nové logice
+        if (m==='high') students = students.filter(s => (s.motivation||0) <= 2);
         if (m==='mid') students = students.filter(s => (s.motivation||0) === 3);
-        if (m==='low') students = students.filter(s => (s.motivation||0) <= 2);
+        if (m==='low') students = students.filter(s => (s.motivation||0) >= 4);
       }
       
       renderGrid(students);
@@ -666,7 +744,7 @@
     function showAddTaskModal() {
       if (appState.currentStudent) {
         showModal('addTaskModal');
-        el('taskStudent').value = appState.currentStudent.lastName + ' ' + appState.currentStudent.firstName;
+        el('taskStudent').value = appState.currentStudent.fullName;
       } else {
         showModal('addTaskModal');
       }
@@ -675,7 +753,7 @@
     function showAddAwardModal() {
       if (appState.currentStudent) {
         showModal('addAwardModal');
-        el('awardStudent').value = appState.currentStudent.lastName + ' ' + appState.currentStudent.firstName;
+        el('awardStudent').value = appState.currentStudent.fullName;
       } else {
         showModal('addAwardModal');
       }
@@ -686,7 +764,7 @@
       const awardSelect = el('awardStudent');
       
       const options = appState.students.map(s => 
-        `<option value="${s.lastName} ${s.firstName}">${s.lastName} ${s.firstName}</option>`
+        `<option value="${s.fullName}">${s.fullName}</option>`
       ).join('');
       
       taskSelect.innerHTML = '<option value="">Vyberte žáka...</option>' + options;
@@ -749,8 +827,6 @@
 
     // Event listeners
     document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🚀 Aplikace se spouští...');
-
       // Navigation
       document.querySelectorAll('[data-view]').forEach(btn => {
         btn.addEventListener('click', () => showView(btn.dataset.view));
@@ -772,74 +848,114 @@
           hideModal(e.target.id);
         }
       });
+      
+      const params = new URLSearchParams(location.search);
+      const token = params.get('token');
+      const admin = params.get('admin');
 
       // Load data
       try {
-        console.log('🔄 Načítám data z API...');
         const payload = await fetchAPI();
         if (payload?.success) {
-          const data = payload.data || {};
-          console.log('✅ Data z API úspěšně načtena:', data);
+          appState.isAdmin = (payload.userType === 'admin');
+          const data = payload.data || payload.studentData;
           
-          // SPRÁVNÉ mapování pro admin i student payload
-          const studentsArray = 
-            Array.isArray(data.students) ? data.students :
-            Array.isArray(data.zaci)     ? data.zaci     :
-            (data.student ? [data.student] : []);
+          if (appState.isAdmin) {
+            appState.students = (data.zaci || []).map(z => ({
+              id: z.id || z.ID || Math.random(),
+              firstName: z.firstName || z['Jméno'] || '',
+              lastName: z.lastName || z['Příjmení'] || '',
+              fullName: z['Celé jméno'] || '', // KLÍČOVÁ OPRAVA: nové pole pro celé jméno
+              nickname: z.nickname || z['oslovení 1. pád'] || z['Oslovení'] || z['Jméno'] || '',
+              instrument: z.instrument || z['Předmět'] || '',
+              grade: Number(z.grade || z['Ročník'] || 0),
+              motivation: Number(z.motivation || z['Baví/krize'] || 3),
+              birthDate: z.birthDate || z['Datum narození'] || '2015-01-01',
+              avatarUrl: z['avatar'] || z['url'] || '' // KLÍČOVÁ OPRAVA: nový klíč pro url
+            }));
+            appState.tasks = (data.denik || []).map(d => ({
+              id: d.id || Math.random(),
+              studentName: d['Žák'] || '',
+              title: d.title || d['Název úkolu'] || '',
+              composition: d.composition || d['Skladba'] || '',
+              status: d.status || d['Stav úkolu'] || '',
+              date: d.date || d['Datum'] || new Date().toISOString().split('T')[0],
+              points: Number(d.points || d['Body'] || 0),
+              note: d.note || d['Poznámka'] || ''
+            }));
+            appState.awards = (data.oceneni || []).map(a => ({
+              id: a.id || Math.random(),
+              studentName: a['Žák'] || '',
+              title: a.title || a['Název ocenění'] || '',
+              description: a.description || a['Popis'] || '',
+              imageUrl: a.imageUrl || a['url'] || a['url '] || ''
+            }));
+            
+            showDashboard();
 
-          // OPRAVENÉ MAPOVÁNÍ - firstName/lastName prohozené
-          appState.students = studentsArray.map(z => ({
-            id: z.id || z.ID || Math.random(),
-            firstName: z.firstName || z['Příjmení'] || '',    // ✅ OPRAVENO
-            lastName: z.lastName || z['Jméno'] || '',         // ✅ OPRAVENO
-            nickname: z.nickname || z['oslovení 1. pád'] || z['Oslovení'] || z['Příjmení'] || '',
-            instrument: z.instrument || z['Předmět'] || '',
-            grade: Number(z.grade || z['Ročník'] || 0),
-            motivation: Number(z.motivation || z['Baví/krize'] || 3),
-            birthDate: z.birthDate || z['Datum narození'] || '2015-01-01'
-          }));
-
-          appState.tasks = (data.tasks || data.denik || []).map(d => ({
-            id: d.id || Math.random(),
-            studentName: d.studentName || d['Žák'] || '',
-            title: d.title || d['Název úkolu'] || '',
-            composition: d.composition || d['Skladba'] || '',
-            status: d.status || d['Stav úkolu'] || '',
-            date: d.date || d['Datum'] || new Date().toISOString().split('T')[0],
-            points: Number(d.points || d['Body'] || 0),
-            note: d.note || d['Poznámka'] || d['Moje poznámka'] || ''
-          }));
-
-          appState.awards = (data.awards || data.oceneni || []).map(a => ({
-            id: a.id || Math.random(),
-            studentName: a.studentName || a['Žák'] || '',
-            title: a.title || a['Název ocenění'] || '',
-            description: a.description || a['Popis'] || '',
-            imageUrl: a.imageUrl || a['url'] || a['url '] || ''
-          }));
-
-          console.log('✅ Mapovaná data:', {
-            students: appState.students.length,
-            tasks: appState.tasks.length, 
-            awards: appState.awards.length
-          });
-          
+          } else if (payload.userType === 'student' && payload.studentData) {
+            const studentData = payload.studentData;
+            const s = studentData.student;
+            appState.students = [{
+              id: s.id || s.ID || Math.random(),
+              firstName: s.firstName || s['Jméno'] || '',
+              lastName: s.lastName || s['Příjmení'] || '',
+              fullName: s['Celé jméno'] || '', // KLÍČOVÁ OPRAVA
+              nickname: s.nickname || s['oslovení 1. pád'] || s['Oslovení'] || s['Jméno'] || '',
+              instrument: s.instrument || s['Předmět'] || '',
+              grade: Number(s.grade || s['Ročník'] || 0),
+              motivation: Number(s.motivation || s['Baví/krize'] || 3),
+              birthDate: s.birthDate || s['Datum narození'] || '2015-01-01',
+              avatarUrl: s['avatar'] || s['url'] || '' // KLÍČOVÁ OPRAVA
+            }];
+            appState.tasks = (studentData.denik || []).map(d => ({
+              id: d.id || Math.random(),
+              studentName: d['Žák'] || '',
+              title: d.title || d['Název úkolu'] || '',
+              composition: d.composition || d['Skladba'] || '',
+              status: d.status || d['Stav úkolu'] || '',
+              date: d.date || d['Datum'] || new Date().toISOString().split('T')[0],
+              points: Number(d.points || d['Body'] || 0),
+              note: d.note || d['Poznámka'] || ''
+            }));
+            appState.awards = (studentData.oceneni || []).map(a => ({
+              id: a.id || Math.random(),
+              studentName: a['Žák'] || '',
+              title: a.title || a['Název ocenění'] || '',
+              description: a.description || a['Popis'] || '',
+              imageUrl: a.imageUrl || a['url'] || a['url '] || ''
+            }));
+            appState.currentStudent = appState.students[0];
+            showStudentDetail(appState.currentStudent);
+            
+          } else {
+            throw new Error('API returned no data');
+          }
         } else {
-          throw new Error('API nevrátilo platná data');
+          throw new Error('API returned no data');
         }
-      } catch (error) {
-        console.warn('⚠️ API selhalo, používám demo data:', error.message);
-        appState.students = [...FALLBACK.students];
+      } catch (e) {
+        console.log('API failed, using fallback data:', e);
+        appState.students = FALLBACK.students.map(s => ({
+          ...s,
+          fullName: s.firstName + ' ' + s.lastName,
+          avatarUrl: s.avatarUrl || '' // Ensure avatarUrl exists
+        }));
         appState.tasks = [...FALLBACK.tasks];
         appState.awards = [...FALLBACK.awards];
         appState.isAdmin = true;
+        showDashboard();
       }
-
-      // Initial render
-      console.log('🎨 Renderuji aplikaci...');
+      
       renderStats();
-      applyFilters();
-      console.log('✅ Aplikace je připravena!');
+      applyFilters(); // místo renderGrid(appState.students) - aby se respektovaly filtry
+      
+      // Skryjeme tlačítka pro přidání úkolů a ocenění pro studenta
+      if (!appState.isAdmin) {
+          document.querySelectorAll('.btn-primary').forEach(btn => btn.style.display = 'none');
+          document.querySelectorAll('.controls').forEach(ctrl => ctrl.style.display = 'none');
+          document.querySelectorAll('.nav-btn[data-view="statistics"]').forEach(btn => btn.style.display = 'none');
+      }
     });
   </script>
 </body>
