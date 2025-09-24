@@ -1,85 +1,794 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hudební žáci</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        .hidden { display: none !important; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; color: #333; }
-        .stats { display: flex; gap: 20px; margin: 20px 0; }
-        .stat-card { background: white; padding: 20px; border-radius: 8px; text-align: center; flex: 1; }
-        .stat-number { font-size: 2em; font-weight: bold; color: #4CAF50; }
-        .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .student-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .student-header { display: flex; align-items: center; gap: 15px; }
-        .student-avatar { width: 50px; height: 50px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .student-info h3 { margin: 0; color: #333; }
-        .student-details { color: #666; font-size: 14px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Správa hudebních žáků</title>
+  <style>
+    :root {
+      --bg:#0f172a; --card:#111827; --muted:#9ca3af; --text:#e5e7eb; --accent:#22c55e; --accent2:#3b82f6;
+      --danger:#ef4444; --warning:#eab308; --surface:#1f2937; --border:#374151;
+    }
+    * { box-sizing: border-box; }
+    html,body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    h1 { margin: 0 0 16px 0; font-size: 26px; font-weight: 700; }
+    h2 { font-size: 20px; margin: 0 0 12px 0; }
+    
+    /* Navigation */
+    .nav { display:flex; gap:12px; align-items:center; margin-bottom: 20px; flex-wrap: wrap; }
+    .nav-btn { padding:8px 16px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); text-decoration:none; cursor:pointer; transition:all 0.2s; }
+    .nav-btn:hover { background:var(--surface); }
+    .nav-btn.active { background:var(--accent); color:white; }
+    
+    /* Controls */
+    .controls { display:flex; gap:12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .select { background:var(--card); color:var(--text); border:1px solid var(--border); padding:10px 12px; border-radius:8px; min-width:160px; }
+    .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:500; transition:all 0.2s; }
+    .btn-primary { background:var(--accent); color:white; }
+    .btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+    .btn-danger { background:var(--danger); color:white; }
+    .btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+    
+    /* Stats */
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin: 12px 0 20px; }
+    .stat { background:linear-gradient(180deg,var(--card), #0b1220); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+    .stat .num { font-size:24px; font-weight:800; margin-top:6px; color:#a5b4fc; }
+    .stat .label { font-size:12px; color:var(--muted); text-transform:uppercase; }
+    
+    /* Grid */
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+    .card { background:linear-gradient(180deg,var(--card), #0b1220); border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); transition:transform 0.2s; cursor:pointer; }
+    .card:hover { transform:translateY(-2px); }
+    .row { display:flex; gap:12px; align-items:center; }
+    .avatar { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:800; color:white; font-size:18px; }
+    .name { font-weight:700; font-size:18px; }
+    .muted { color: var(--muted); font-size: 13px; margin-top:4px; }
+    .badges { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+    .badge { font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:var(--card); }
+    .mot-high { color:var(--accent); }
+    .mot-mid { color:var(--warning); }
+    .mot-low { color:var(--danger); }
+    
+    /* Detail View */
+    .detail-view { display:none; }
+    .detail-header { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; }
+    .detail-avatar { width:80px; height:80px; font-size:28px; }
+    .detail-info h2 { margin-bottom:8px; }
+    .detail-meta { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:16px; }
+    .meta-item { background:var(--surface); padding:12px; border-radius:8px; }
+    .meta-label { font-size:12px; color:var(--muted); text-transform:uppercase; }
+    .meta-value { font-weight:600; margin-top:4px; }
+    
+    /* Tasks & Awards */
+    .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; }
+    .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .task-item, .award-item { background:var(--surface); border-radius:8px; padding:12px; margin-bottom:8px; }
+    .task-header { display:flex; justify-content:space-between; align-items:start; margin-bottom:8px; }
+    .task-title { font-weight:600; }
+    .task-points { background:var(--accent); color:white; padding:2px 8px; border-radius:12px; font-size:12px; }
+    .task-status { display:inline-block; padding:4px 8px; border-radius:6px; background:var(--border); font-size:12px; margin-top:8px; }
+    .task-date { font-size:11px; color:var(--muted); margin-top:4px; }
+    
+    /* Modal */
+    .modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+    .modal.show { display:flex; }
+    .modal-content { background:var(--card); border-radius:16px; padding:24px; width:100%; max-width:500px; max-height:80vh; overflow-y:auto; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .modal-close { background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer; }
+    .form-group { margin-bottom:16px; }
+    .form-label { display:block; margin-bottom:4px; font-weight:500; }
+    .form-input { width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); }
+    .form-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:20px; }
+    
+    /* Charts */
+    .chart-container { background:var(--surface); border-radius:8px; padding:16px; margin:12px 0; position:relative; height:200px; }
+    .chart-bar { background:var(--accent); border-radius:4px; transition:all 0.3s; }
+    .chart-label { font-size:12px; color:var(--muted); text-align:center; margin-top:8px; }
+    
+    /* Progress Ring */
+    .progress-ring { width:60px; height:60px; }
+    .progress-ring circle { transition:stroke-dasharray 0.35s; transform:rotate(-90deg); transform-origin:50% 50%; }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) { 
+      .container { padding:12px; }
+      .stats { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .detail-meta { grid-template-columns: 1fr; }
+      .nav { flex-direction:column; align-items:stretch; }
+      .nav-btn { text-align:center; }
+      .controls { flex-direction:column; }
+      .select { min-width:100%; }
+      .modal-content { margin:0; width:100%; max-width:none; border-radius:16px 16px 0 0; }
+      .form-actions { flex-direction:column; }
+      h1 { font-size:22px; }
+    }
+    @media (max-width: 480px) {
+      .container { padding:8px; }
+      .card { padding:12px; }
+      .detail-header { padding:16px; }
+      .section { padding:16px; }
+    }
+    
+    /* Animations */
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    
+    /* Hidden utility */
+    .hidden { display: none !important; }
+    
+    /* Loading */
+    .loading { text-align:center; padding:40px; color:var(--muted); }
+    .spinner { width:40px; height:40px; border:4px solid var(--border); border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 16px; }
+    @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎵 Správa hudebních žáků</h1>
-        
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="totalStudents">0</div>
-                <div>Celkem žáků</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="activeTasks">0</div>
-                <div>Aktivních úkolů</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalAwards">0</div>
-                <div>Udělených ocenění</div>
-            </div>
-        </div>
-
-        <div id="studentsGrid" class="students-grid">
-            <!-- Žáci se načtou zde -->
-        </div>
+  <div class="container">
+    <!-- Navigation -->
+    <div class="nav">
+      <h1>🎵 Správa hudebních žáků</h1>
+      <button class="nav-btn active" data-view="dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-view="statistics">📈 Statistiky</button>
+      <button class="nav-btn" onclick="location.reload()">🔄 Obnovit</button>
     </div>
 
-    <script>
-        console.log('Načítám aplikaci...');
-        
-        const students = [
-            {"id": 1, "firstName": "Karolína", "lastName": "Bayerová", "instrument": "kytara", "grade": 3, "nickname": "Karolínka"},
-            {"id": 2, "firstName": "Antonín", "lastName": "Bechyňa", "instrument": "kytara", "grade": 4, "nickname": "Toník"},
-            {"id": 3, "firstName": "Filip", "lastName": "Červenka", "instrument": "klarinet", "grade": 4, "nickname": "Filípek"}
-        ];
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="dashboard-view">
+      <div class="controls">
+        <select class="select" id="fInstrument">
+          <option value="">Všechny nástroje</option>
+          <option value="kytara">Kytara</option>
+          <option value="klarinet">Klarinet</option>
+          <option value="zobcová flétna">Zobcová flétna</option>
+          <option value="saxofon">Saxofon</option>
+        </select>
+        <select class="select" id="fGrade">
+          <option value="">Všechny ročníky</option>
+          <option value="1">1. ročník</option>
+          <option value="2">2. ročník</option>
+          <option value="3">3. ročník</option>
+          <option value="4">4. ročník</option>
+        </select>
+        <select class="select" id="fMot">
+          <option value="">Všechny stavy</option>
+          <option value="high">Vysoká motivace</option>
+          <option value="mid">Střední motivace</option>
+          <option value="low">Krize motivace</option>
+        </select>
+        <button class="btn btn-primary" onclick="showAddTaskModal()">➕ Přidat úkol</button>
+      </div>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, zobrazujem žáků...');
-            
-            // Nastav statistiky
-            document.getElementById('totalStudents').textContent = students.length;
-            document.getElementById('activeTasks').textContent = '5';
-            document.getElementById('totalAwards').textContent = '3';
-            
-            // Vykresli žáky
-            const grid = document.getElementById('studentsGrid');
-            grid.innerHTML = students.map(student => {
-                const initials = student.firstName.charAt(0) + student.lastName.charAt(0);
-                return `
-                    <div class="student-card">
-                        <div class="student-header">
-                            <div class="student-avatar">${initials}</div>
-                            <div class="student-info">
-                                <h3>${student.nickname}</h3>
-                                <div class="student-details">${student.instrument} • ${student.grade}. ročník</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            console.log('Aplikace načtena!');
-        });
-    </script>
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Celkem žáků</div>
+          <div class="num" id="totalStudents">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Aktivních úkolů</div>
+          <div class="num" id="activeTasks">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Dokončených úkolů</div>
+          <div class="num" id="completedTasks">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Udělených ocenění</div>
+          <div class="num" id="totalAwards">0</div>
+        </div>
+      </div>
+
+      <div id="grid" class="grid"></div>
+    </div>
+
+    <!-- Statistics View -->
+    <div id="statistics-view" class="statistics-view" style="display:none;">
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Průměrné body</div>
+          <div class="num" id="avgPoints">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Nejaktivnější nástroj</div>
+          <div class="num" id="topInstrument">-</div>
+        </div>
+        <div class="stat">
+          <div class="label">Úspěšnost</div>
+          <div class="num" id="successRate">0%</div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>📊 Rozdělení podle nástrojů</h2>
+        <div id="instrumentChart" class="chart-container"></div>
+      </div>
+      
+      <div class="section">
+        <h2>📈 Pokrok podle ročníků</h2>
+        <div id="gradeChart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <!-- Student Detail View -->
+    <div id="detail-view" class="detail-view">
+      <button class="nav-btn" onclick="showDashboard()">← Zpět na dashboard</button>
+      
+      <div class="detail-header">
+        <div class="row">
+          <div class="avatar detail-avatar" id="detailAvatar">KK</div>
+          <div class="detail-info">
+            <h2 id="detailName">Jméno žáka</h2>
+            <div class="muted" id="detailBasicInfo">Nástroj • Ročník • Věk</div>
+            <div class="detail-meta" id="detailMeta"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>📝 Úkoly</h2>
+          <button class="btn btn-primary" onclick="showAddTaskModal()">➕ Přidat úkol</button>
+        </div>
+        <div id="detailTasks"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>🏆 Ocenění</h2>
+          <button class="btn btn-primary" onclick="showAddAwardModal()">➕ Přidat ocenění</button>
+        </div>
+        <div id="detailAwards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div id="addTaskModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>➕ Přidat nový úkol</h2>
+        <button class="modal-close" onclick="hideModal('addTaskModal')">&times;</button>
+      </div>
+      <form id="addTaskForm">
+        <div class="form-group">
+          <label class="form-label">Žák</label>
+          <select class="form-input" id="taskStudent" required>
+            <option value="">Vyberte žáka...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Název úkolu</label>
+          <input type="text" class="form-input" id="taskTitle" required placeholder="Např. Procvičit stupnice C dur">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Skladba</label>
+          <input type="text" class="form-input" id="taskComposition" placeholder="Např. Bach - Inventio č. 1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Poznámka</label>
+          <textarea class="form-input" id="taskNote" rows="3" placeholder="Dodatečné poznámky k úkolu..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stav</label>
+          <select class="form-input" id="taskStatus">
+            <option value="⏳ Cvičíme">⏳ Cvičíme</option>
+            <option value="🚀 Skvělý pokrok!">🚀 Skvělý pokrok!</option>
+            <option value="✅ Zvládnuto">✅ Zvládnuto</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Body (1-10)</label>
+          <input type="number" class="form-input" id="taskPoints" min="1" max="10" value="5">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('addTaskModal')">Zrušit</button>
+          <button type="submit" class="btn btn-primary">Přidat úkol</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Award Modal -->
+  <div id="addAwardModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🏆 Přidat ocenění</h2>
+        <button class="modal-close" onclick="hideModal('addAwardModal')">&times;</button>
+      </div>
+      <form id="addAwardForm">
+        <div class="form-group">
+          <label class="form-label">Žák</label>
+          <select class="form-input" id="awardStudent" required>
+            <option value="">Vyberte žáka...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Název ocenění</label>
+          <input type="text" class="form-input" id="awardTitle" required placeholder="Např. Rytmický mistr">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Popis</label>
+          <textarea class="form-input" id="awardDescription" rows="3" required placeholder="Za co žák ocenění získal..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL obrázku (volitelné)</label>
+          <input type="url" class="form-input" id="awardImageUrl" placeholder="https://imgur.com/...">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('addAwardModal')">Zrušit</button>
+          <button type="submit" class="btn btn-primary">Přidat ocenění</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ZMĚŇTE TUTO URL NA VAŠI GOOGLE APPS SCRIPT URL!
+    const CONFIG = {
+      apiBaseUrl: "https://script.google.com/macros/s/AKfycbwIXxgETTkJ6tAzm1XzpmSngGBgPh5qhnCZA3PBMeKrnkoQT1OWLIGnq0LcDoyiC9E8Fg/exec",
+      timeoutMs: 8000
+    };
+
+    // Fallback demo data 
+    const FALLBACK = {
+      students: [
+        { id:1, firstName:'Karolína', lastName:'Bayerová', nickname:'Karolínka', instrument:'kytara', grade:3, motivation:4, birthDate:'2015-11-28' },
+        { id:2, firstName:'Antonín', lastName:'Bechyňa', nickname:'Toník', instrument:'kytara', grade:4, motivation:4, birthDate:'2014-10-02' },
+        { id:3, firstName:'Filip', lastName:'Červenka', nickname:'Filípek', instrument:'klarinet', grade:4, motivation:4, birthDate:'2015-04-05' },
+        { id:4, firstName:'Marie', lastName:'Nová', nickname:'Marička', instrument:'zobcová flétna', grade:2, motivation:3, birthDate:'2016-03-15' },
+        { id:5, firstName:'Tomáš', lastName:'Svoboda', nickname:'Tom', instrument:'saxofon', grade:3, motivation:5, birthDate:'2015-07-20' }
+      ],
+      tasks: [
+        { id:1, studentName:'Bechyňa Antonín', title:'Hrát správné noty', composition:'Coleman - Irská', status:'⏳ Cvičíme', date:'2025-09-19', points:6, note:'Zaměřit se na posuvky' },
+        { id:2, studentName:'Bechyňa Antonín', title:'Dotáhnout držení nástroje', composition:'Bach - Chorál č. 1', status:'🚀 Skvělý pokrok!', date:'2025-09-20', points:9, note:'' },
+        { id:3, studentName:'Bayerová Karolína', title:'Cvičit stupnice', composition:'', status:'⏳ Cvičíme', date:'2025-09-21', points:7, note:'C dur, G dur' },
+        { id:4, studentName:'Červenka Filip', title:'Rytmická cvičení', composition:'Etuda č. 5', status:'✅ Zvládnuto', date:'2025-09-18', points:10, note:'Výborně!' },
+        { id:5, studentName:'Nová Marie', title:'Základní technika', composition:'', status:'⏳ Cvičíme', date:'2025-09-22', points:5, note:'Procvičit fingering' }
+      ],
+      awards: [
+        { id:1, studentName:'Bechyňa Antonín', title:'Rytmický mistr', description:'Za zvládnutí složitého rytmu', imageUrl:'https://i.imgur.com/example1.jpg' },
+        { id:2, studentName:'Bayerová Karolína', title:'Pilný student', description:'Za pravidelné cvičení', imageUrl:'' },
+        { id:3, studentName:'Červenka Filip', title:'Technický pokrok', description:'Za výrazné zlepšení techniky', imageUrl:'' }
+      ]
+    };
+
+    // Globální stav aplikace
+    let appState = {
+      students: [], tasks: [], awards: [], 
+      currentView: 'dashboard', currentStudent: null,
+      isAdmin: false
+    };
+
+    // Pomocné funkce
+    const el = id => document.getElementById(id);
+    const age = d => { const b=new Date(d), t=new Date(); let a=t.getFullYear()-b.getFullYear(); const m=t.getMonth()-b.getMonth(); if(m<0||(m===0&&t.getDate()<b.getDate())) a--; return a; };
+    const initials = (f,l) => ((f?.[0]||'') + (l?.[0]||'')).toUpperCase();
+    const motClass = m => m>=4 ? 'mot-high' : (m>=3 ? 'mot-mid' : 'mot-low');
+    const motText = m => m>=4 ? 'Vysoká motivace' : (m>=3 ? 'Střední motivace' : 'Krize motivace');
+    const formatDate = d => new Date(d).toLocaleDateString('cs-CZ');
+
+    // Navigation
+    function showView(viewName) {
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`[data-view="${viewName}"]`)?.classList.add('active');
+      
+      document.getElementById('dashboard-view').style.display = viewName === 'dashboard' ? 'block' : 'none';
+      document.getElementById('statistics-view').style.display = viewName === 'statistics' ? 'block' : 'none';
+      document.getElementById('detail-view').style.display = 'none';
+      
+      if (viewName === 'statistics') {
+        renderStatistics();
+      }
+      appState.currentView = viewName;
+    }
+
+    function showDashboard() {
+      showView('dashboard');
+      renderGrid(appState.students);
+    }
+
+    function showStudentDetail(student) {
+      appState.currentStudent = student;
+      document.getElementById('detail-view').style.display = 'block';
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('statistics-view').style.display = 'none';
+      
+      renderStudentDetail(student);
+    }
+
+    // Stats rendering
+    function renderStats() {
+      const completedTasks = appState.tasks.filter(t => t.status === '✅ Zvládnuto');
+      
+      el('totalStudents').textContent = appState.students.length;
+      el('activeTasks').textContent = appState.tasks.filter(t => t.status !== '✅ Zvládnuto').length;
+      el('completedTasks').textContent = completedTasks.length;
+      el('totalAwards').textContent = appState.awards.length;
+    }
+
+    function renderStatistics() {
+      const avgPoints = appState.tasks.length > 0 
+        ? (appState.tasks.reduce((sum, t) => sum + (t.points || 0), 0) / appState.tasks.length).toFixed(1)
+        : 0;
+      
+      const instrumentCounts = {};
+      appState.students.forEach(s => {
+        instrumentCounts[s.instrument] = (instrumentCounts[s.instrument] || 0) + 1;
+      });
+      const topInstrument = Object.keys(instrumentCounts).sort((a,b) => instrumentCounts[b] - instrumentCounts[a])[0] || '-';
+      
+      const successRate = appState.tasks.length > 0 
+        ? Math.round((appState.tasks.filter(t => t.status === '✅ Zvládnuto').length / appState.tasks.length) * 100)
+        : 0;
+
+      el('avgPoints').textContent = avgPoints;
+      el('topInstrument').textContent = topInstrument;
+      el('successRate').textContent = successRate + '%';
+
+      renderInstrumentChart(instrumentCounts);
+      renderGradeChart();
+    }
+
+    function renderInstrumentChart(data) {
+      const container = el('instrumentChart');
+      const maxVal = Math.max(...Object.values(data));
+      
+      container.innerHTML = Object.entries(data).map(([instrument, count]) => {
+        const height = maxVal > 0 ? (count / maxVal) * 150 : 0;
+        return `
+          <div style="display:inline-block; margin:0 8px; text-align:center;">
+            <div class="chart-bar" style="width:40px; height:${height}px; margin-bottom:8px;"></div>
+            <div class="chart-label">${instrument}</div>
+            <div class="chart-label">${count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGradeChart() {
+      const gradeCounts = {};
+      appState.students.forEach(s => {
+        gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1;
+      });
+      
+      const container = el('gradeChart');
+      const maxVal = Math.max(...Object.values(gradeCounts));
+      
+      container.innerHTML = Object.entries(gradeCounts).sort().map(([grade, count]) => {
+        const height = maxVal > 0 ? (count / maxVal) * 150 : 0;
+        return `
+          <div style="display:inline-block; margin:0 8px; text-align:center;">
+            <div class="chart-bar" style="width:40px; height:${height}px; margin-bottom:8px;"></div>
+            <div class="chart-label">${grade}. ročník</div>
+            <div class="chart-label">${count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Grid rendering
+    function renderGrid(students) {
+      const grid = el('grid');
+      if (!grid) return;
+      
+      if (!students.length) {
+        grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--muted);">Žádní žáci nevyhovují filtrům</div>';
+        return;
+      }
+
+      grid.innerHTML = students.map(s => {
+        const studentTasks = appState.tasks.filter(t => t.studentName === s.firstName + ' ' + s.lastName || t.studentName === s.lastName + ' ' + s.firstName);
+        const avgPoints = studentTasks.length > 0 ? (studentTasks.reduce((sum, t) => sum + (t.points || 0), 0) / studentTasks.length).toFixed(1) : '0.0';
+        
+        return `
+          <div class="card fade-in" onclick="showStudentDetail(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+            <div class="row">
+              <div class="avatar">${initials(s.firstName, s.lastName)}</div>
+              <div style="flex:1;">
+                <div class="name">${s.nickname || s.firstName}</div>
+                <div class="muted">${s.instrument} • ${s.grade}. ročník • ${age(s.birthDate)} let</div>
+              </div>
+            </div>
+            <div class="badges">
+              <div class="badge ${motClass(s.motivation||3)}">${motText(s.motivation||3)}</div>
+              <div class="badge">⭐ ${avgPoints} bodů</div>
+              <div class="badge">📝 ${studentTasks.length} úkolů</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Student detail rendering
+    function renderStudentDetail(student) {
+      const studentTasks = appState.tasks.filter(t => 
+        t.studentName === student.firstName + ' ' + student.lastName || 
+        t.studentName === student.lastName + ' ' + student.firstName
+      );
+      const studentAwards = appState.awards.filter(a => 
+        a.studentName === student.firstName + ' ' + student.lastName ||
+        a.studentName === student.lastName + ' ' + student.firstName
+      );
+
+      // Header
+      el('detailAvatar').textContent = initials(student.firstName, student.lastName);
+      el('detailName').textContent = student.nickname || student.firstName + ' ' + student.lastName;
+      el('detailBasicInfo').textContent = `${student.instrument} • ${student.grade}. ročník • ${age(student.birthDate)} let`;
+      
+      // Meta info
+      const avgPoints = studentTasks.length > 0 ? (studentTasks.reduce((sum, t) => sum + (t.points || 0), 0) / studentTasks.length).toFixed(1) : '0.0';
+      const completedTasks = studentTasks.filter(t => t.status === '✅ Zvládnuto').length;
+      
+      el('detailMeta').innerHTML = `
+        <div class="meta-item">
+          <div class="meta-label">Průměrné body</div>
+          <div class="meta-value">⭐ ${avgPoints}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Dokončené úkoly</div>
+          <div class="meta-value">✅ ${completedTasks}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Celkem úkolů</div>
+          <div class="meta-value">📝 ${studentTasks.length}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Ocenění</div>
+          <div class="meta-value">🏆 ${studentAwards.length}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Motivace</div>
+          <div class="meta-value ${motClass(student.motivation||3)}">${motText(student.motivation||3)}</div>
+        </div>
+      `;
+
+      // Tasks
+      el('detailTasks').innerHTML = studentTasks.length > 0 
+        ? studentTasks.sort((a,b) => new Date(b.date) - new Date(a.date)).map(task => `
+            <div class="task-item fade-in">
+              <div class="task-header">
+                <div class="task-title">${task.title}</div>
+                <div class="task-points">${task.points || 0} b</div>
+              </div>
+              ${task.composition ? `<div class="muted">🎵 ${task.composition}</div>` : ''}
+              <div class="task-status">${task.status}</div>
+              <div class="task-date">📅 ${formatDate(task.date)}</div>
+              ${task.note ? `<div class="muted" style="margin-top:8px; font-style:italic;">"${task.note}"</div>` : ''}
+            </div>
+          `).join('')
+        : '<div class="loading">📝 Zatím žádné úkoly</div>';
+
+      // Awards  
+      el('detailAwards').innerHTML = studentAwards.length > 0
+        ? studentAwards.map(award => `
+            <div class="award-item fade-in">
+              <div style="display:flex; gap:12px; align-items:start;">
+                ${award.imageUrl ? `<img src="${award.imageUrl}" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">` : '<div style="width:48px; height:48px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🏆</div>'}
+                <div style="flex:1;">
+                  <div style="font-weight:600; margin-bottom:4px;">${award.title}</div>
+                  <div class="muted">${award.description}</div>
+                </div>
+              </div>
+            </div>
+          `).join('')
+        : '<div class="loading">🏆 Zatím žádná ocenění</div>';
+    }
+
+    // Filtering
+    function applyFilters() {
+      const i = el('fInstrument').value;
+      const g = el('fGrade').value;
+      const m = el('fMot').value;
+      
+      let students = [...appState.students];
+      if (i) students = students.filter(s => (s.instrument||'') === i);
+      if (g) students = students.filter(s => String(s.grade||'') === g);
+      if (m) {
+        if (m==='high') students = students.filter(s => (s.motivation||0) >= 4);
+        if (m==='mid') students = students.filter(s => (s.motivation||0) === 3);
+        if (m==='low') students = students.filter(s => (s.motivation||0) <= 2);
+      }
+      
+      renderGrid(students);
+    }
+
+    // Modals
+    function showModal(id) {
+      el(id).classList.add('show');
+      if (id === 'addTaskModal' || id === 'addAwardModal') {
+        populateStudentSelects();
+      }
+    }
+
+    function hideModal(id) {
+      el(id).classList.remove('show');
+    }
+
+    function showAddTaskModal() {
+      if (appState.currentStudent) {
+        showModal('addTaskModal');
+        el('taskStudent').value = appState.currentStudent.lastName + ' ' + appState.currentStudent.firstName;
+      } else {
+        showModal('addTaskModal');
+      }
+    }
+
+    function showAddAwardModal() {
+      if (appState.currentStudent) {
+        showModal('addAwardModal');
+        el('awardStudent').value = appState.currentStudent.lastName + ' ' + appState.currentStudent.firstName;
+      } else {
+        showModal('addAwardModal');
+      }
+    }
+
+    function populateStudentSelects() {
+      const taskSelect = el('taskStudent');
+      const awardSelect = el('awardStudent');
+      
+      const options = appState.students.map(s => 
+        `<option value="${s.lastName} ${s.firstName}">${s.lastName} ${s.firstName}</option>`
+      ).join('');
+      
+      taskSelect.innerHTML = '<option value="">Vyberte žáka...</option>' + options;
+      awardSelect.innerHTML = '<option value="">Vyberte žáka...</option>' + options;
+    }
+
+    // Form handling
+    function handleAddTask(e) {
+      e.preventDefault();
+      
+      const newTask = {
+        id: Math.max(...appState.tasks.map(t => t.id), 0) + 1,
+        studentName: el('taskStudent').value,
+        title: el('taskTitle').value,
+        composition: el('taskComposition').value,
+        note: el('taskNote').value,
+        status: el('taskStatus').value,
+        points: parseInt(el('taskPoints').value) || 5,
+        date: new Date().toISOString().split('T')[0]
+      };
+      
+      appState.tasks.push(newTask);
+      hideModal('addTaskModal');
+      el('addTaskForm').reset();
+      
+      // Refresh current view
+      if (appState.currentStudent) {
+        renderStudentDetail(appState.currentStudent);
+      }
+      renderStats();
+      
+      // TODO: Send to API
+      console.log('New task:', newTask);
+    }
+
+    function handleAddAward(e) {
+      e.preventDefault();
+      
+      const newAward = {
+        id: Math.max(...appState.awards.map(a => a.id), 0) + 1,
+        studentName: el('awardStudent').value,
+        title: el('awardTitle').value,
+        description: el('awardDescription').value,
+        imageUrl: el('awardImageUrl').value
+      };
+      
+      appState.awards.push(newAward);
+      hideModal('addAwardModal');
+      el('addAwardForm').reset();
+      
+      // Refresh current view
+      if (appState.currentStudent) {
+        renderStudentDetail(appState.currentStudent);
+      }
+      renderStats();
+      
+      // TODO: Send to API
+      console.log('New award:', newAward);
+    }
+
+    // API functions
+    async function fetchAPI() {
+      const params = new URLSearchParams(location.search);
+      const admin = params.get('admin');
+      const token = params.get('token');
+
+      const url = new URL(CONFIG.apiBaseUrl);
+      url.searchParams.set('format', 'json');
+      if (admin) {
+        url.searchParams.set('admin', admin);
+        appState.isAdmin = true;
+      }
+      if (token && !admin) url.searchParams.set('token', token);
+
+      const controller = new AbortController();
+      const t = setTimeout(()=>controller.abort(), CONFIG.timeoutMs);
+
+      const res = await fetch(url, { headers:{'Accept':'application/json'}, signal:controller.signal });
+      clearTimeout(t);
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Navigation
+      document.querySelectorAll('[data-view]').forEach(btn => {
+        btn.addEventListener('click', () => showView(btn.dataset.view));
+      });
+
+      // Filters
+      ['fInstrument','fGrade','fMot'].forEach(id => {
+        const select = el(id);
+        if (select) select.addEventListener('change', applyFilters);
+      });
+
+      // Forms
+      el('addTaskForm')?.addEventListener('submit', handleAddTask);
+      el('addAwardForm')?.addEventListener('submit', handleAddAward);
+
+      // Modal close on outside click
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+          hideModal(e.target.id);
+        }
+      });
+
+      // Load data
+      try {
+        const payload = await fetchAPI();
+        if (payload?.success) {
+          const data = payload.data || {};
+          
+          // Map Google Sheets data
+          appState.students = (data.students || data.zaci || []).map(z => ({
+            id: z.id || z.ID || Math.random(),
+            firstName: z.firstName || z['Jméno'] || '',
+            lastName: z.lastName || z['Příjmení'] || '',
+            nickname: z.nickname || z['oslovení 1. pád'] || z['Oslovení'] || z['Jméno'] || '',
+            instrument: z.instrument || z['Předmět'] || '',
+            grade: Number(z.grade || z['Ročník'] || 0),
+            motivation: Number(z.motivation || z['Baví/krize'] || 3),
+            birthDate: z.birthDate || z['Datum narození'] || '2015-01-01'
+          }));
+
+          appState.tasks = (data.tasks || data.denik || []).map(d => ({
+            id: d.id || Math.random(),
+            studentName: d.studentName || d['Žák'] || '',
+            title: d.title || d['Název úkolu'] || '',
+            composition: d.composition || d['Skladba'] || '',
+            status: d.status || d['Stav úkolu'] || '',
+            date: d.date || d['Datum'] || new Date().toISOString().split('T')[0],
+            points: Number(d.points || d['Body'] || 0),
+            note: d.note || d['Poznámka'] || ''
+          }));
+
+          appState.awards = (data.awards || data.oceneni || []).map(a => ({
+            id: a.id || Math.random(),
+            studentName: a.studentName || a['Žák'] || '',
+            title: a.title || a['Název ocenění'] || '',
+            description: a.description || a['Popis'] || '',
+            imageUrl: a.imageUrl || a['url'] || a['url '] || ''
+          }));
+
+          console.log('Loaded from API:', appState);
+        } else {
+          throw new Error('API returned no data');
+        }
+      } catch (e) {
+        console.log('API failed, using fallback data:', e);
+        appState.students = [...FALLBACK.students];
+        appState.tasks = [...FALLBACK.tasks];
+        appState.awards = [...FALLBACK.awards];
+        appState.isAdmin = true; // Enable admin features in demo mode
+      }
+
+      // Initial render
+      renderStats();
+      renderGrid(appState.students);
+    });
+  </script>
 </body>
 </html>
