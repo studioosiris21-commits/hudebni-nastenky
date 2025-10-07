@@ -1156,7 +1156,7 @@
   <script>
     // Konstanty
     const GOOGLE_SHEETS_ID = 'https://script.google.com/macros/s/AKfycbxHh7J8OTI8FpVWxmiGFVjsRD99UTS56Av2j8wT-TkjIpOT0Ib09OXGot9aws07dfc2bg/exec';
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxHh7J8OTI8FpVWxmiGFVjsRD99UTS56Av2j8wT-TkjIpOT0Ib09OXGot9aws07dfc2bg/exec'; // REPLACE WITH YOUR ACTUAL GAS URL
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxHh7J8OTI8FpVWxmiGFVjsRD99UTS56Av2j8wT-TkjIpOT0Ib09OXGot9aws07dfc2bg/exec';
     const PUBLISHED_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQrc_04DhSXUxoOI3KJaNPReUZQisAr5z4SZNtpScdt-_YT7U7KFHJWSkMJFqIPIA10J1IxnWcsaR3/pub?output=csv';
 
     // Globální proměnné
@@ -1190,45 +1190,144 @@
       });
     }
 
-    // Načtení dat - rozšířeno pro všechny funkce
-async function loadStudentData() {
-  const token = getTokenFromURL();
-  const admin = getAdminFromURL();
+    // Načtení dat - LIVE verze (ne demo)
+    async function loadStudentData() {
+      const token = getTokenFromURL();
+      const admin = getAdminFromURL();
 
-  if (admin) {
-    isAdmin = true;
-    showAdminControls();
-  }
+      if (admin) {
+        isAdmin = true;
+        showAdminControls();
+      }
 
-  if (!token && !admin) {
-    showError('Chybí přístupový token. Ujistěte se, že používáte správný odkaz.');
-    return;
-  }
+      if (!token && !admin) {
+        showError('Chybí přístupový token. Ujistěte se, že používáte správný odkaz.');
+        return;
+      }
 
-  try {
-    // Načte data z vašeho živého GAS API (nahradili jste GAS_API_URL!)
-    const response = await fetch(
-      `${GAS_API_URL}?format=json${token ? '&token=' + token : ''}${admin ? '&admin=' + admin : ''}`
-    );
-    const data = await response.json();
+      try {
+        const response = await fetch(
+          `${GAS_API_URL}?format=json${token ? '&token=' + token : ''}${admin ? '&admin=' + admin : ''}`
+        );
+        const data = await response.json();
 
-    if (!data.success) {
-      throw new Error(data.error || 'Neplatný přístupový token');
+        if (!data.success) {
+          throw new Error(data.error || 'Neplatný přístupový token');
+        }
+
+        if (admin) {
+          // ADMIN pohled
+          currentStudentData = null;
+          currentTasksData = data.data.denik;
+          currentAwardsData = data.data.oceneni;
+          currentCompositionsData = data.data.skladby;
+          // Zde by měl být renderAllStudents pro admin grid
+        } else {
+          // STUDENT pohled
+          currentStudentData = data.data.student;
+          currentTasksData = data.data.tasks;
+          currentAwardsData = data.data.awards;
+          currentCompositionsData = data.data.skladby;
+
+          renderStudentHeader();
+          renderCompositions();
+          renderProgressWithCompositions();
+          renderScore();
+          renderExercisesWithMaterials();
+          renderAwards();
+          loadStudentOptions();
+        }
+      } catch (error) {
+        console.error('Chyba při načítání dat:', error);
+        showError('Nepodařilo se načíst data: ' + (error.message || error));
+      }
     }
 
-    if (admin) {
-      // ADMIN pohled - všechna data
-      currentStudentData = null;
-      currentTasksData = data.data.denik;
-      currentAwardsData = data.data.oceneni;
-      currentCompositionsData = data.data.skladby;
-      // (Zobrazte žáků grid/panel pro admina zde nebo zavolejte vaši fci např. renderAllStudents)
-    } else {
-      // STUDENT pohled - detail studenta
-      currentStudentData = data.data.student;
-      currentTasksData = data.data.tasks;
-      currentAwardsData = data.data.awards;
-      currentCompositionsData = data.data.skladby;
+    // Demo data pro testování
+    async function loadDemoData() {
+      console.log('Načítám demo data...');
+      
+      currentStudentData = {
+        'Celé jméno': 'Bechyňa Antonín',
+        'oslovení 2. pád': 'Tondova',
+        'Předmět': 'kytara',
+        'Ročník': '4',
+        'avatar': 'https://images.squarespace-cdn.com/content/v1/5e6ec4e2ba0df96243db28ec/1719006484066-YI3WQCK626ROB6EZ5L03/known+feature+03+-+metronome.jpg'
+      };
+
+      currentTasksData = [
+        {
+          'Název úkolu': 'Hrát správné noty a posuvky',
+          'Žák': 'Bechyňa Antonín',
+          'Skladba': 'Coleman - Irská',
+          'Stav úkolu': '⏳ Cvičíme',
+          'Datum': '2025-09-19',
+          'Body': '3'
+        },
+        {
+          'Název úkolu': 'Dotáhnout držení nástroje',
+          'Žák': 'Bechyňa Antonín',
+          'Skladba': 'Bach - Chorál č. 1',
+          'Stav úkolu': '🚀 Skvělý pokrok!',
+          'Datum': '2025-09-20',
+          'Body': '2'
+        },
+        {
+          'Název úkolu': 'Zaměřit se na nádechy a dýchání',
+          'Žák': 'Bechyňa Antonín',
+          'Skladba': 'Coleman - Irská',
+          'Stav úkolu': '✅ Zvládnuto',
+          'Datum': '2025-09-21',
+          'Body': '5'
+        },
+        {
+          'Název úkolu': 'Rytmus a tempo',
+          'Žák': 'Bechyňa Antonín',
+          'Skladba': 'Vivaldi - Čtvero ročních dob',
+          'Stav úkolu': '⭐ Skoro hotovo!',
+          'Datum': '2025-09-22',
+          'Body': '7'
+        },
+        {
+          'Název úkolu': 'Dynamika a výraz',
+          'Žák': 'Bechyňa Antonín',
+          'Skladba': 'Mozart - Malá noční hudba',
+          'Stav úkolu': '⏳ Cvičíme',
+          'Datum': '2025-09-23',
+          'Body': '1'
+        }
+      ];
+
+      currentCompositionsData = [
+        {
+          'Název': 'Coleman - Irská',
+          'Autor': 'Coleman',
+          'Materiály': 'https://soundslice.com/slices/abc123/, https://youtube.com/watch?v=xyz'
+        },
+        {
+          'Název': 'Bach - Chorál č. 1',
+          'Autor': 'Bach',
+          'Materiály': 'https://imslp.org/wiki/Bach_Chorales, https://soundslice.com/slices/bach123/'
+        },
+        {
+          'Název': 'Vivaldi - Čtvero ročních dob',
+          'Autor': 'Vivaldi',
+          'Materiály': 'https://soundslice.com/slices/vivaldi456/'
+        }
+      ];
+
+      currentAwardsData = [
+        {
+          'Název ocenění': 'Super Rytmus',
+          'Popis': 'Za zvládnutí složitého rytmického úseku',
+          'Žák': 'Bechyňa Antonín'
+        },
+        {
+          'Název ocenění': 'Mistr piana',
+          'Popis': 'Soutěžní vítězství na lokální úrovni',
+          'Žák': 'Bechyňa Antonín'
+        }
+      ];
 
       renderStudentHeader();
       renderCompositions();
@@ -1238,12 +1337,455 @@ async function loadStudentData() {
       renderAwards();
       loadStudentOptions();
     }
-  } catch (error) {
-    console.error('Chyba při načítání dat:', error);
-    showError('Nepodařilo se načíst data: ' + (error.message || error));
-  }
-  }
-});
+
+    // Render student header
+    function renderStudentHeader() {
+      if (!currentStudentData) return;
+
+      const greeting = safeGet(currentStudentData, 'oslovení 2. pád', 
+                              safeGet(currentStudentData, 'oslovení 1. pád', 
+                              safeGet(currentStudentData, 'Celé jméno', 'studente')));
+      
+      document.getElementById('studentTitle').textContent = 
+        `Vítej, ${greeting} – Tvoje hudební cesta začíná!`;
+      
+      document.getElementById('studentInstrument').textContent = 
+        safeGet(currentStudentData, 'Předmět', 'Neuvedeno');
+      
+      document.getElementById('studentGrade').textContent = 
+        safeGet(currentStudentData, 'Ročník', 'Neuvedeno');
+
+      const avatarUrl = safeGet(currentStudentData, 'avatar');
+      if (avatarUrl && avatarUrl !== '') {
+        document.getElementById('studentAvatar').src = avatarUrl;
+      }
+    }
+
+    // Render skladby na kterých pracujeme
+    function renderCompositions() {
+      if (!currentTasksData || currentTasksData.length === 0) {
+        document.getElementById('compositionsList').innerHTML = 
+          '<div class="empty-state"><div class="empty-state-icon">🎵</div>Zatím žádné skladby</div>';
+        return;
+      }
+
+      const activeCompositions = [...new Set(
+        currentTasksData
+          .filter(task => safeGet(task, 'Stav úkolu') !== '✅ Zvládnuto')
+          .map(task => safeGet(task, 'Skladba'))
+          .filter(composition => composition && composition.trim() !== '')
+      )];
+
+      if (activeCompositions.length === 0) {
+        document.getElementById('compositionsList').innerHTML = 
+          '<div class="empty-state"><div class="empty-state-icon">🎉</div>Skvělé! Všechny úkoly jsou splněné!</div>';
+        return;
+      }
+
+      const compositionsHtml = activeCompositions.map(composition => 
+        `<li>♪ ${composition}</li>`
+      ).join('');
+
+      document.getElementById('compositionsList').innerHTML = compositionsHtml;
+    }
+
+    // Render progress s názvy skladeb místo datumů
+    function renderProgressWithCompositions() {
+      if (!currentTasksData || currentTasksData.length === 0) {
+        document.getElementById('progressSection').innerHTML = 
+          '<div class="empty-state">Žádné úkoly k zobrazení</div>';
+        return;
+      }
+
+      const activeTasks = currentTasksData.filter(task => 
+        safeGet(task, 'Stav úkolu') !== '✅ Zvládnuto'
+      );
+
+      if (activeTasks.length === 0) {
+        document.getElementById('progressSection').innerHTML = 
+          '<div class="empty-state"><div class="empty-state-icon">🎉</div>Všechny úkoly dokončeny!</div>';
+        return;
+      }
+
+      // Seskupení úkolů podle skladby a výpočet průměru
+      const compositionGroups = {};
+      activeTasks.forEach(task => {
+        const composition = safeGet(task, 'Skladba');
+        if (!composition) return;
+
+        if (!compositionGroups[composition]) {
+          compositionGroups[composition] = [];
+        }
+        compositionGroups[composition].push(task);
+      });
+
+      // Vytvoření progress dat s průměry
+      allProgressData = Object.entries(compositionGroups).map(([composition, tasks]) => {
+        const totalPoints = tasks.reduce((sum, task) => sum + (parseInt(safeGet(task, 'Body', '0')) || 0), 0);
+        const averagePoints = Math.round(totalPoints / tasks.length);
+        const percentage = Math.min(averagePoints * 10, 100);
+
+        const getProgressMessage = (avg) => {
+          const messages = {
+            0: { message: "Začínáme!", emoji: "🌱" },
+            1: { message: "První krůčky!", emoji: "👶" },
+            2: { message: "Už se učíš!", emoji: "📚" },
+            3: { message: "Pokračuješ skvěle!", emoji: "🎯" },
+            4: { message: "Už ti to jde!", emoji: "💪" },
+            5: { message: "Více než polovina!", emoji: "🎊" },
+            6: { message: "Skoro hotovo!", emoji: "🚀" },
+            7: { message: "Už ti to jde!", emoji: "⭐" },
+            8: { message: "Chybí jen kousíček!", emoji: "🎨" },
+            9: { message: "Téměř perfektní!", emoji: "🏆" },
+            10: { message: "Máš to - hotovo!", emoji: "🎉" }
+          };
+          return messages[avg] || messages[0];
+        };
+
+        const progressMsg = getProgressMessage(averagePoints);
+        
+        return {
+          composition,
+          averagePoints,
+          percentage,
+          totalTasks: tasks.length,
+          message: progressMsg
+        };
+      });
+
+      renderProgressItems();
+    }
+
+    function renderProgressItems() {
+      const itemsToShow = allProgressData.slice(0, displayedProgressCount);
+      
+      if (itemsToShow.length === 0) {
+        document.getElementById('progressSection').innerHTML = 
+          '<div class="empty-state">Žádné úkoly k zobrazení</div>';
+        return;
+      }
+
+      const progressHtml = itemsToShow.map(item => {
+        return `
+          <div class="progress-item">
+            <div class="progress-circle" data-percent="${item.percentage}">
+              <span class="progress-text">${item.averagePoints}/10</span>
+            </div>
+            <div class="progress-label">
+              ${item.message.emoji} ${item.message.message}
+            </div>
+            <div class="progress-composition">${item.composition}</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('progressSection').innerHTML = progressHtml;
+
+      // Zobrazit/skrýt Load More tlačítko
+      const loadMoreBtn = document.getElementById('loadMoreProgress');
+      if (allProgressData.length > displayedProgressCount) {
+        loadMoreBtn.classList.remove('hidden');
+      } else {
+        loadMoreBtn.classList.add('hidden');
+      }
+    }
+
+    function loadMoreProgress() {
+      displayedProgressCount += 4;
+      renderProgressItems();
+    }
+
+    // Render score
+    function renderScore() {
+      if (!currentTasksData || currentTasksData.length === 0) {
+        document.getElementById('totalScore').textContent = '0';
+        document.getElementById('ongoingSongs').textContent = '0';
+        document.getElementById('completedSongs').textContent = '0';
+        return;
+      }
+
+      const totalPoints = currentTasksData.reduce((sum, task) => {
+        const points = parseFloat(safeGet(task, 'Body', '0')) || 0;
+        return sum + points;
+      }, 0);
+
+      const ongoingCompositions = new Set(
+        currentTasksData
+          .filter(task => safeGet(task, 'Stav úkolu') !== '✅ Zvládnuto')
+          .map(task => safeGet(task, 'Skladba'))
+          .filter(composition => composition && composition.trim() !== '')
+      );
+
+      const completedCompositions = new Set(
+        currentTasksData
+          .filter(task => safeGet(task, 'Stav úkolu') === '✅ Zvládnuto')
+          .map(task => safeGet(task, 'Skladba'))
+          .filter(composition => composition && composition.trim() !== '')
+      );
+
+      document.getElementById('totalScore').textContent = Math.round(totalPoints);
+      document.getElementById('ongoingSongs').textContent = ongoingCompositions.size;
+      document.getElementById('completedSongs').textContent = completedCompositions.size;
+    }
+
+    // Render cvičení s rozbalovacími materiály
+    function renderExercisesWithMaterials() {
+      const exercisesContainer = document.getElementById('exercisesContent');
+      
+      if (!currentTasksData || currentTasksData.length === 0) {
+        exercisesContainer.innerHTML = '<div class="empty-state">Žádné úkoly 🎯</div>';
+        return;
+      }
+
+      const activeTasks = currentTasksData.filter(task => 
+        safeGet(task, 'Stav úkolu') !== '✅ Zvládnuto'
+      );
+
+      if (activeTasks.length === 0) {
+        exercisesContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎉</div>Všechny úkoly dokončeny!</div>';
+        return;
+      }
+
+      let tableHtml = `
+        <table class="exercises-table">
+          <thead>
+            <tr>
+              <th>Skladba</th>
+              <th>Název úkolu</th>
+              <th>Status</th>
+              <th>Body</th>
+              <th>Datum</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      activeTasks.forEach((task, index) => {
+        const composition = safeGet(task, 'Skladba', 'Neuvedeno');
+        const taskName = safeGet(task, 'Název úkolu', 'Bez názvu');
+        const status = safeGet(task, 'Stav úkolu', 'Neznámý');
+        const points = safeGet(task, 'Body', '0');
+        const date = safeGet(task, 'Datum', '');
+        const formattedDate = date ? new Date(date).toLocaleDateString('cs-CZ') : '';
+
+        tableHtml += `
+          <tr onclick="toggleMaterials(${index})" style="cursor: pointer;">
+            <td data-label="Skladba"><span class="composition-link">${composition}</span></td>
+            <td data-label="Úkol">${taskName}</td>
+            <td data-label="Status"><span class="status-badge">${status}</span></td>
+            <td data-label="Body"><strong>${points}</strong></td>
+            <td data-label="Datum">${formattedDate}</td>
+            <td data-label="Akce">
+              <button class="material-button" onclick="event.stopPropagation(); toggleMaterials(${index})">
+                📚 📄 Materiály
+              </button>
+            </td>
+          </tr>
+          <tr class="materials-row" id="materials-${index}">
+            <td colspan="6">
+              <div class="materials-content">
+                <h4>📚 Materiály pro: ${composition}</h4>
+                <div class="materials-list" id="materials-list-${index}">
+                  <div class="loading">Načítám materiály...</div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      tableHtml += `
+          </tbody>
+        </table>
+        <div style="margin-top: 20px; padding: 20px; background: #f0f8ff; border-radius: 12px;">
+          <h4 style="margin: 0 0 10px 0;">📚 Tip pro cvičení</h4>
+          <p style="margin: 0; color: #666;">
+            Klikněte na libovolný řádek v tabulce pro zobrazení materiálů ke skladbě. 
+            Materiály se otevřou v nové kartě prohlížeče.
+          </p>
+        </div>
+      `;
+
+      exercisesContainer.innerHTML = tableHtml;
+    }
+
+    function toggleMaterials(taskIndex) {
+      const materialsRow = document.getElementById(`materials-${taskIndex}`);
+      const materialsListContainer = document.getElementById(`materials-list-${taskIndex}`);
+      
+      if (materialsRow.classList.contains('show')) {
+        materialsRow.classList.remove('show');
+      } else {
+        // Skrýt všechny ostatní materiály
+        document.querySelectorAll('.materials-row').forEach(row => row.classList.remove('show'));
+        
+        // Zobrazit aktuální materiály
+        materialsRow.classList.add('show');
+        
+        // Načíst materiály pro skladbu
+        const task = currentTasksData.filter(t => safeGet(t, 'Stav úkolu') !== '✅ Zvládnuto')[taskIndex];
+        const composition = safeGet(task, 'Skladba');
+        loadMaterialsForComposition(composition, materialsListContainer);
+      }
+    }
+
+    function loadMaterialsForComposition(composition, container) {
+      // Najít kompozici v datech
+      const compositionData = currentCompositionsData?.find(c => 
+        safeGet(c, 'Název') === composition
+      );
+      
+      if (!compositionData) {
+        container.innerHTML = '<p>Žádné materiály k dispozici pro tuto skladbu.</p>';
+        return;
+      }
+      
+      const materialsString = safeGet(compositionData, 'Materiály', '');
+      if (!materialsString) {
+        container.innerHTML = '<p>Žádné materiály k dispozici pro tuto skladbu.</p>';
+        return;
+      }
+      
+      const materials = materialsString.split(',').map(url => url.trim()).filter(url => url);
+      
+      if (materials.length === 0) {
+        container.innerHTML = '<p>Žádné materiály k dispozici pro tuto skladbu.</p>';
+        return;
+      }
+      
+      const materialsHtml = materials.map((url, index) => {
+        const linkText = url.includes('soundslice.com') ? 'Soundslice notace' :
+                        url.includes('youtube.com') || url.includes('youtu.be') ? 'YouTube video' :
+                        url.includes('imslp.org') ? 'IMSLP noty' :
+                        `Materiál ${index + 1}`;
+        
+        return `
+          <a href="${url}" target="_blank" class="material-link">
+            🔗 ${linkText}
+          </a>
+        `;
+      }).join('');
+      
+      container.innerHTML = materialsHtml;
+    }
+
+    // Render awards
+    function renderAwards() {
+      const awardsContainer = document.getElementById('awardsContent');
+      
+      if (!currentAwardsData || currentAwardsData.length === 0) {
+        awardsContainer.innerHTML = '<div class="empty-state" style="color: rgba(255,255,255,0.8);"><div class="empty-state-icon">🏆</div>Zatím žádná ocenění</div>';
+        return;
+      }
+
+      const awardsHtml = currentAwardsData.map(award => {
+        const title = safeGet(award, 'Název ocenění', 'Ocenění');
+        const description = safeGet(award, 'Popis', '');
+        
+        return `
+          <div class="award-item">
+            <div class="award-icon">🏆</div>
+            <div class="award-content">
+              <h4>Skvělý výkon!</h4>
+              <p>🎵 ${title}</p>
+              <small>${description}</small>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      awardsContainer.innerHTML = awardsHtml;
+    }
+
+    // Admin funkce
+    function showAdminControls() {
+      document.getElementById('adminNav').classList.remove('hidden');
+      document.getElementById('adminControls').classList.remove('hidden');
+    }
+
+    function loadStudentOptions() {
+      if (!isAdmin) return;
+      
+      // Demo studenti pro selecty
+      const students = [
+        'Bechyňa Antonín',
+        'Bayerová Karolína', 
+        'Červenka Filip',
+        'Drasnarová Viktorie'
+      ];
+      
+      const studentSelects = document.querySelectorAll('select[name="student"]');
+      studentSelects.forEach(select => {
+        select.innerHTML = '<option value="">Vyberte žáka...</option>' +
+          students.map(student => `<option value="${student}">${student}</option>`).join('');
+      });
+    }
+
+    // Modal funkce
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    // Form handling
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      
+      // Simulace odeslání dat
+      console.log('Odesílám úkol:', Object.fromEntries(formData));
+      alert('Úkol byl úspěšně přidán! (v produkci by se odeslal do Google Sheets)');
+      closeModal('taskModal');
+      this.reset();
+    });
+
+    document.getElementById('compositionForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      
+      console.log('Odesílám skladbu:', Object.fromEntries(formData));
+      alert('Skladba byla úspěšně přidána!');
+      closeModal('compositionModal');
+      this.reset();
+    });
+
+    document.getElementById('awardForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      
+      console.log('Odesílám ocenění:', Object.fromEntries(formData));
+      alert('Ocenění bylo úspěšně přidáno!');
+      closeModal('awardModal');
+      this.reset();
+    });
+
+    // Zavření modalů při kliknutí mimo
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeModal(this.id);
+        }
+      });
+    });
+
+    function showError(message) {
+      const errorHtml = `<div class="error">❌ ${message}</div>`;
+      document.body.innerHTML = `<div class="dashboard-container">${errorHtml}</div>`;
+    }
+
+    // Inicializace při načtení stránky
+    document.addEventListener('DOMContentLoaded', function() {
+      loadStudentData();
+    });
+
     // ESC key pro zavření modalů
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
