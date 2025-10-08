@@ -1246,7 +1246,7 @@
   </div>
 
   <script>
-    // Konstanty
+    // Konstanty - OPRAVENO NA SPRÁVNOU NOVOU URL!
     const GOOGLE_SHEETS_ID = '1I0oKF7oE82fzQD7gW_O8pjInNj-jWK2hh4Jly2ok3y4';
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwnfsyXkTTD9U0DWR6HFf6FghaC-jCN5QOFC0pbNiUkqfRhOKyrABKjgkDOxtrJGc8zbg/exec';
     const PUBLISHED_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQrc_04DhSXUxoOI3KJaNPReUZQisAr5z4SZNtpScdt-_YT7U7KFHJWSkMJFqIPIA10J1IxnWcsaR3/pub?output=csv';
@@ -1317,9 +1317,14 @@
 
       try {
         console.log('Načítám data z API...', { token, admin });
-        const response = await fetch(
-          `${GAS_API_URL}?format=json${token ? '&token=' + token : ''}${admin ? '&admin=' + admin : ''}`
-        );
+        // POZOR: Nově přidávám parametry přímo do URL!
+        let apiUrl = GAS_API_URL + '?format=json';
+        if (token) apiUrl += '&token=' + encodeURIComponent(token);
+        if (admin) apiUrl += '&admin=' + encodeURIComponent(admin);
+        
+        console.log('Final API URL:', apiUrl);
+        
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
